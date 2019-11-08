@@ -67,7 +67,7 @@ iris1 %>% head()
 
 Reading in data and tidying it.
 
-```{r}
+```{r, message=FALSE}
 data_path = "data/" 
 files = dir(data_path, pattern = "*.csv") 
 
