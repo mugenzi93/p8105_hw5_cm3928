@@ -26,6 +26,8 @@ options(
 scale_colour_discrete = scale_colour_viridis_d
 scale_fill_discrete = scale_fill_viridis_d
 theme_set(theme_minimal() + theme(legend.position = "right"))
+
+set.seed(10)
 ```
 
 # Problem 1
@@ -33,8 +35,6 @@ theme_set(theme_minimal() + theme(legend.position = "right"))
 This is the code chunk that introduces missing data in the **iris** dataset.
 
 ```{r}
-set.seed(10)
-
 iris_with_missing = iris %>% 
   map_df(~replace(.x, sample(1:150, 20), NA)) %>%
   mutate(Species = as.character(Species)) %>% view()
@@ -104,12 +104,111 @@ As we move from week_1 to week_8, there is an overall plateau trend (despite wit
 
 # Problem 3
 
+I will write a function that simulate data from a simple linear regression, fit the regression model, and return estimates of the regression coefficients.
 
 
+```{r}
+sim_slr = function(n = 30, beta0 = 2, beta1 = 0){
+  
+  slr_data = tibble(
+    x = rnorm(n, mean = 0, sd = 1),
+    y = beta0 + beta1 * x + rnorm(n, 0, sqrt(50))
+  )
+  
+  ls_fit = lm(y ~ x, data = slr_data) %>% 
+    broom::tidy() # 95% is the default CI
+  
+  tibble(
+    beta1_hat = ls_fit[[2,2]],
+    p_value = ls_fit[[2,5]]
+  )
+}
+```
 
 
+Now, I will use the **purr** function **rerun** to run a simulation **10000** times to see the effect of randomness in standard error to the estimates **beta0_hat** and **beta1_hat**.
+
+```{r}
+slr_10000 = 
+  rerun(10000, sim_slr(beta1 = 0)) %>% 
+  bind_rows()
+```
 
 
+Let us repeat the above for multiple **beta1**. 
+
+
+```{r}
+beta1_change = 
+  tibble(beta1 = c(1:6)) %>% 
+  mutate(
+    output_list = map(.x = beta1, ~rerun(10000, sim_slr(beta1 = .x))),
+    parameter_df = map(output_list, bind_rows)) %>% 
+  select(-output_list) %>% 
+  unnest(parameter_df)
+```
+
+Let's now plot the association between effect size and power of a test.
+
+```{r}
+beta1_change %>% 
+  group_by(beta1) %>% 
+  summarise(
+    n = n(),
+    power = sum(p_value < 0.05)/n) %>% 
+  ggplot(aes(x = beta1, y = power, fill = beta1)) +
+  geom_bar(stat = "identity") + 
+  scale_x_continuous(breaks = c(1:6)) +
+  labs(
+    title = "Association between Effect Size and Power of a Test",
+    x = "True Value of Beta 2",
+    y = "Power")
+```
+
+According to the bar plot, it is clear that as the effect size increases, the power of a test increases too.
+
+Let's now make a plot comparing both the average estimates of beta1 hat for all samples and beta1 hat for just samples where the null hypothesis was rejected to the true value of beta1.
+
+```{r}
+# Average estimates of beta1 hat on the y-axis against true of beta1 value on the
+# x-axis.
+all_sample_average = 
+  beta1_change %>% 
+  group_by(beta1) %>% 
+  summarise(
+    beta1_average = mean(beta1_hat))
+
+# Average estimates of beta1 hat for only samples whose null hypothesis was rejected.
+select_samples = 
+  beta1_change %>% 
+  filter(p_value < 0.05) %>% 
+  group_by(beta1) %>% 
+  summarise(
+    average_beta1_select = mean(beta1_hat))
+
+# Overlayed plots
+
+ggplot() + 
+  geom_point(aes(x = beta1, y = beta1_average), data = all_sample_average,
+                 color = "red") +
+  geom_smooth(aes(x = beta1, y = beta1_average), data = all_sample_average,
+                 color = "red") +
+  geom_point(aes(x = beta1, y = average_beta1_select), data = select_samples,
+                 color = "green") +
+  geom_smooth(aes(x = beta1, y = average_beta1_select), data = select_samples,
+                 color = "green") +
+  scale_x_continuous(breaks = c(1:6)) + 
+  scale_color_identity(breaks = c("red", "green"),
+                       labels = c("all Samples", "Select Samples"),
+                        guide = "legend") +
+  labs(
+    title = "Mean Estimates of Beta1 hat against true Beta1 Values",
+    x = "True Beta1 Values",
+    y = "Mean Estimates of Beta1 Hat") 
+```
+
+
+Thus, when the effect size is small (beta1 = 1), the mean estimate of beta1 hat for all samples (red line) is significantly different from the mean estimates of beta1 hat for those samples whose null hypothese was rejected. But as the effect size increases, meaning as the effect size approaches beta1 equal 6, mean estimates for both all samples and samples whose null hypothesis was rejected tend towards being the same values. 
 
 
 
