@@ -99,10 +99,10 @@ data %>%
   
 ```
 
-As we move from week_1 to week_28, there is an overall plateau trend (despite within groups fluctuations) in observations of the control group (suggesting a placebo was administered) and an overall increase in observations for the intervantion group. Since we are dealing with a longitidinal study, I suspect the treatment for the variable being studied here is really efficient (or inefficient) and can safely conclude that there is a significant difference between the intervention and control groups at baseline (week_1) compared to the same groups after the treatment (week_8).
+As we move from week_1 to week_8, there is an overall plateau trend (despite within groups fluctuations) in observations of the control group (suggesting a placebo was administered) and an overall increase in observations for the intervantion group. Since we are dealing with a longitidinal study, I suspect the treatment for the variable being studied here is really efficient (or inefficient) and can safely conclude that there is a significant difference between the intervention and control groups at baseline (week_1) compared to the same groups after the treatment (week_8).
 
 
-
+# Problem 3
 
 
 
