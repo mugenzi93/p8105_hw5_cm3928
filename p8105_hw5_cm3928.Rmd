@@ -59,7 +59,7 @@ missingness = function(x) {
 iris1 = 
   map_df(.x = iris_with_missing, ~ missingness(.x)) %>% 
   knitr::kable()
-iris1 %>% head()
+iris1
 ```
 
 
@@ -73,12 +73,18 @@ files = dir(data_path, pattern = "*.csv")
 
 data = data_frame(filename = files) %>% 
   mutate(file_contents = map(filename, ~ read_csv(file.path(data_path, .))))  
-data %>% 
+data = data %>% 
   unnest() %>% 
   separate(col = filename, into = c("arm", "id")) %>% 
   mutate(
     arm = recode(arm, "con" = "Control", "exp" = "Experimental")) %>% 
-  select(id, arm, week_1:week_8) %>% 
+  select(id, arm, week_1:week_8) %>% view()
+```
+
+Next, I will build the spaghetting plot showing observations of each subject overtime.
+
+```{r}
+data %>%
   pivot_longer(
     week_1:week_8,
     names_to = "week",
@@ -90,10 +96,10 @@ data %>%
     title = "Observation of each Subject Overtime",
     x = "Week",
     y = "Observations")
+  
 ```
 
-
-
+As we move from week_1 to week_28, there is an overall plateau trend (despite within groups fluctuations) in observations of the control group (suggesting a placebo was administered) and an overall increase in observations for the intervantion group. Since we are dealing with a longitidinal study, I suspect the treatment for the variable being studied here is really efficient (or inefficient) and can safely conclude that there is a significant difference between the intervention and control groups at baseline (week_1) compared to the same groups after the treatment (week_8).
 
 
 
