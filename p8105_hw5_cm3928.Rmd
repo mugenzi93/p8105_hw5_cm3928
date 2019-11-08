@@ -11,6 +11,7 @@ library(viridis)
 library(skimr)
 library(purrr)
 library(tidyr)
+library(rvest)
 knitr::opts_chunk$set(
 	echo = TRUE,
 	warning = FALSE,
@@ -58,12 +59,38 @@ missingness = function(x) {
 iris1 = 
   map_df(.x = iris_with_missing, ~ missingness(.x)) %>% 
   knitr::kable()
-iris1
+iris1 %>% head()
 ```
 
 
 # Problem 2
 
+Reading in data and tidying it.
+
+```{r}
+data_path = "data/" 
+files = dir(data_path, pattern = "*.csv") 
+
+data = data_frame(filename = files) %>% 
+  mutate(file_contents = map(filename, ~ read_csv(file.path(data_path, .))))  
+data %>% 
+  unnest() %>% 
+  separate(col = filename, into = c("arm", "id")) %>% 
+  mutate(
+    arm = recode(arm, "con" = "Control", "exp" = "Experimental")) %>% 
+  select(id, arm, week_1:week_8) %>% 
+  pivot_longer(
+    week_1:week_8,
+    names_to = "week",
+    values_to = "observation") %>% 
+  ggplot(aes(x = week, y = observation, color = id, group = id)) +
+  geom_line() +
+  facet_grid(~arm) +
+  labs(
+    title = "Observation of each Subject Overtime",
+    x = "Week",
+    y = "Observations")
+```
 
 
 
